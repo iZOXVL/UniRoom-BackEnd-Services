@@ -7,11 +7,12 @@ exports.getChatsByUser = void 0;
 const db_1 = require("../lib/db");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const axios_1 = __importDefault(require("axios"));
-const JWT_SECRET = 'Un1R0Om202A*@*';
+const verifyTokenApi = process.env.VERIFY_TOKEN_API;
+const JWT_SECRET = process.env.JWT_SECRET;
 const getChatsByUser = async (req, res) => {
     try {
         const { token } = req.params;
-        const tokenResponse = await axios_1.default.post('https://dev-mobile-auth-api.uniroom.app/api/users/verify-auth', { token });
+        const tokenResponse = await axios_1.default.post(verifyTokenApi, { token });
         if (!tokenResponse.data.validateToken) {
             res.status(401).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
             return;
