@@ -12,42 +12,37 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const createChat = async (req, res) => {
     try {
         const { landlord, token, room } = req.body;
-        const tokenResponse = await axios_1.default.post(verifyTokenApi, { token: token });
+        // Verificación del token
+        const tokenResponse = await axios_1.default.post(verifyTokenApi, { token });
         if (!tokenResponse.data.validateToken) {
             res.status(401).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
             return;
         }
+        // Decodificación del token JWT
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
         const guestId = decoded.userId;
-        console.log('landlord:', landlord.id, 'guestId:', guestId, 'room:', room.roomId);
+        // Buscar chat existente
         const existingChat = await db_1.db.chat.findFirst({
             where: {
                 AND: [
                     { participants: { has: landlord.id } },
                     { participants: { has: guestId } },
-                    { room: { equals: room.roomId } }
+                    { roomId: room.roomId }
                 ],
             },
         });
         console.log('existingChat:', existingChat);
+        // Si ya existe un chat para esa habitación
         if (existingChat) {
             res.status(400).json({ status: 'error', message: 'Ya existe una solicitud para esta habitación.' });
             return;
         }
+        // Crear nuevo chat
         const newChat = await db_1.db.chat.create({
             data: {
-                participants: [
-                    { userId: landlord.id, name: landlord.name, imageUrl: landlord.imageUrl, isOnline: false },
-                    { userId: guestId, name: tokenResponse.data.user.name, imageUrl: tokenResponse.data.user.image }
-                ],
-                status: 'earring',
-                room: {
-                    roomId: room.roomId,
-                    title: room.title,
-                    imageUrl: room.imageUrl,
-                    location: room.location,
-                    price: room.price,
-                },
+                participants: [landlord.id, guestId],
+                status: 'pending',
+                roomId: room.roomId,
             },
         });
         res.status(200).json({ status: 'success', chat: newChat });

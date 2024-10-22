@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts"
+  "start": "node dist/index.js prisma generate",
+  "dev": "nodemon src/index.ts prisma generate",
+  "build": "tsc && prisma generate"
   },
   "keywords": [],
   "author": "",
