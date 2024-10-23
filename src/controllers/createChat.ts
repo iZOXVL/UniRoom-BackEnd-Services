@@ -4,13 +4,13 @@ import jwt from 'jsonwebtoken';
 import axios from 'axios';
 
 const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
-const getRoomDetailsApi = process.env.GET_ROOM_DETAILS_API as string;
+const getRoomDetailsApi = 'https://uruniroom.azurewebsites.net/api/Rooms/GetRoomDetails';
 
 export const createChat = async (req: Request, res: Response): Promise<void> => {
   try {
     const { token, room } = req.body;
 
-    console.log('Token:', token, 'Room:', room);  
+ 
 
     // Verificación del token
     const tokenResponse = await axios.post(verifyTokenApi, { token });
@@ -21,14 +21,14 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
 
     const guest = tokenResponse.data.user;
 
-    console.log('Guest:', guest);
+ 
 
     // Obtener detalles de la habitación y landlord
     const roomDetailsResponse = await axios.post(getRoomDetailsApi, { roomId: room.roomId });
     const roomDetails = roomDetailsResponse.data;
     const landlord = roomDetails.landlordDto;
 
-    console.log('Landlord:', roomDetailsResponse);
+
 
     // Buscar chat existente
     const existingChat = await db.chat.findFirst({
