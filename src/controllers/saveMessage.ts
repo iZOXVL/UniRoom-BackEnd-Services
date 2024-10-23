@@ -34,22 +34,6 @@ export const saveMessage = async (req: Request, res: Response): Promise<void> =>
       },
     });
 
-    
-    const io = req.app.get('socketio');
-    const socket = req.app.get('socket'); 
-    io.to(chatId).emit('message', {
-      chatId,
-      content,
-      from: guest.name,
-    });
-
-    // Evitar que el emisor reciba su propio mensaje
-    io.to(chatId).except(socket.id).emit('message', {
-      chatId,
-      content,
-      from: guest.name,
-    });
-
     res.status(200).json({ status: 'success', message: newMessage });
   } catch (error) {
     console.error('Error al guardar el mensaje:', error);

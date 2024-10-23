@@ -35,6 +35,7 @@ app.use(router);
 app.set('socketio', io);
 
 
+// Eventos de Socket.io
 io.on('connection', (socket) => {
   console.log(`Cliente conectado: ${socket.id}`);
 
@@ -46,7 +47,7 @@ io.on('connection', (socket) => {
 
   // Evento para recibir y retransmitir mensajes
   socket.on('message', async (messageData) => {
-    const { chatId, content, nickname, token } = messageData;
+    const { chatId, content, token } = messageData;
 
     console.log(`Mensaje recibido en el chat ${chatId}:`, content);
 
@@ -66,7 +67,7 @@ io.on('connection', (socket) => {
         data: {
           chatId,
           senderId,
-          nickname,
+          nickname: tokenResponse.data.user.name,
           content,
           isRead: false,
         },
@@ -76,7 +77,7 @@ io.on('connection', (socket) => {
       socket.broadcast.to(chatId).emit('message', {
         chatId,
         content,
-        from: nickname,
+        from: tokenResponse.data.user.name,
       });
 
       console.log(`Mensaje guardado y transmitido en el chat ${chatId}`);
@@ -85,7 +86,13 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Error al guardar el mensaje' });
     }
   });
+
+  // Evento al desconectar un cliente
+  socket.on('disconnect', () => {
+    console.log(`Cliente desconectado: ${socket.id}`);
+  });
 });
+
 
 
 // Escucha del servidor en el puerto 4000
