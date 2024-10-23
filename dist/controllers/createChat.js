@@ -5,51 +5,70 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createChat = void 0;
 const db_1 = require("../lib/db");
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const axios_1 = __importDefault(require("axios"));
 const verifyTokenApi = process.env.VERIFY_TOKEN_API;
-const JWT_SECRET = process.env.JWT_SECRET;
+const getRoomDetailsApi = 'https://uruniroom.azurewebsites.net/api/Rooms/GetRoomDetails';
 const createChat = async (req, res) => {
     try {
-        const { landlord, token, room } = req.body;
+        const { token, room } = req.body;
         // Verificación del token
         const tokenResponse = await axios_1.default.post(verifyTokenApi, { token });
         if (!tokenResponse.data.validateToken) {
-            res.status(401).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
+            res.status(200).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
             return;
         }
-        // Decodificación del token JWT
-        const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
-        const guestId = decoded.userId;
+        const guest = tokenResponse.data.user;
+        // Obtener detalles de la habitación y landlord
+        const roomDetailsResponse = await axios_1.default.post(getRoomDetailsApi, { roomId: room.roomId });
+        const roomDetails = roomDetailsResponse.data;
+        const landlord = roomDetails.landlordDto;
         // Buscar chat existente
         const existingChat = await db_1.db.chat.findFirst({
             where: {
                 AND: [
                     { participants: { has: landlord.id } },
-                    { participants: { has: guestId } },
-                    { roomId: room.roomId }
+                    { participants: { has: guest.id } },
+                    { roomId: room.roomId },
                 ],
             },
         });
-        console.log('existingChat:', existingChat);
-        // Si ya existe un chat para esa habitación
         if (existingChat) {
-            res.status(400).json({ status: 'error', message: 'Ya existe una solicitud para esta habitación.' });
+            res.status(200).json({ status: 'error', message: 'Ya existe una solicitud para esta habitación.' });
             return;
         }
-        // Crear nuevo chat
+        // Crear nuevo chat con detalles de landlord y guest
         const newChat = await db_1.db.chat.create({
             data: {
-                participants: [landlord.id, guestId],
+                participants: [landlord.id, guest.id], // Solo los IDs para la validación
+                participantDetails: [
+                    {
+                        userType: 'userLandlord',
+                        id: "cm2a1xuzc00009alqzu5iui0s",
+                        name: landlord.name,
+                        imageUrl: landlord.imageUrl,
+                    },
+                    {
+                        userType: 'userGuest',
+                        id: guest.id,
+                        name: guest.name,
+                        imageUrl: guest.image || null,
+                    }
+                ],
                 status: 'pending',
                 roomId: room.roomId,
+                roomDetails: {
+                    title: roomDetails.title || 'Sin título',
+                    description: roomDetails.description || 'Sin descripción',
+                    price: roomDetails.price || 0,
+                    location: roomDetails.location || 'Ubicación no especificada',
+                },
             },
         });
         res.status(200).json({ status: 'success', chat: newChat });
     }
     catch (error) {
         console.error('Error al crear el chat:', error);
-        res.status(500).json({ status: 'error', message: 'Error al crear el chat' });
+        res.status(200).json({ status: 'error', message: 'Error al crear el chat' });
     }
 };
 exports.createChat = createChat;

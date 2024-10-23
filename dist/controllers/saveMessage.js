@@ -14,7 +14,7 @@ const saveMessage = async (req, res) => {
         const { chatId, content, nickname, token } = req.body;
         const tokenResponse = await axios_1.default.post(verifyTokenApi, { token });
         if (!tokenResponse.data.validateToken) {
-            res.status(401).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
+            res.status(200).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
             return;
         }
         const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
@@ -32,7 +32,7 @@ const saveMessage = async (req, res) => {
     }
     catch (error) {
         console.error('Error al guardar el mensaje:', error);
-        res.status(500).json({ status: 'error', message: 'Error al guardar el mensaje' });
+        res.status(200).json({ status: 'error', message: 'Error al guardar el mensaje' });
     }
 };
 exports.saveMessage = saveMessage;
