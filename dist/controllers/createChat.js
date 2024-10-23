@@ -43,7 +43,7 @@ const createChat = async (req, res) => {
                 participantDetails: [
                     {
                         userType: 'userLandlord',
-                        id: "cm2a1xuzc00009alqzu5iui0s",
+                        id: landlord.id,
                         name: landlord.name,
                         imageUrl: landlord.imageUrl,
                     },
