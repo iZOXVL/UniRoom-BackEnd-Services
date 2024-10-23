@@ -3,9 +3,8 @@ import { db } from '../lib/db';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 
-const verifyTokenApi = 'https://dev-mobile-auth-api.uniroom.app/api/users/verify-auth';
-const getRoomDetailsApi = 'https://uruniroom.azurewebsites.net/api/Rooms/GetRoomDetails';
-const JWT_SECRET = process.env.JWT_SECRET as string;
+const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
+const getRoomDetailsApi = process.env.GET_ROOM_DETAILS_API as string;
 
 export const createChat = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -80,6 +79,6 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
     res.status(200).json({ status: 'success', chat: newChat });
   } catch (error) {
     console.error('Error al crear el chat:', error);
-    res.status(500).json({ status: 'error', message: 'Error al crear el chat' });
+    res.status(200).json({ status: 'error', message: 'Error al crear el chat' });
   }
 };
