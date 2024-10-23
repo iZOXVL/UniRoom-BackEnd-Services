@@ -22,6 +22,8 @@ const createChat = async (req, res) => {
         const roomDetailsResponse = await axios_1.default.post(getRoomDetailsApi, { roomId: room.roomId });
         const roomDetails = roomDetailsResponse.data;
         const landlord = roomDetails.landlordDto;
+        // Extraer la primera imagen del array multimediaDto.imageUrl
+        const roomImageUrl = roomDetails.multimediaDto?.imageUrl?.[0] || null;
         // Buscar chat existente
         const existingChat = await db_1.db.chat.findFirst({
             where: {
@@ -36,7 +38,7 @@ const createChat = async (req, res) => {
             res.status(200).json({ status: 'error', message: 'Ya existe una solicitud para esta habitación.' });
             return;
         }
-        // Crear nuevo chat con detalles de landlord y guest
+        // Crear nuevo chat con detalles de landlord, guest y primera imagen de la habitación
         const newChat = await db_1.db.chat.create({
             data: {
                 participants: [landlord.id, guest.id], // Solo los IDs para la validación
@@ -58,9 +60,10 @@ const createChat = async (req, res) => {
                 roomId: room.roomId,
                 roomDetails: {
                     title: roomDetails.title || 'Sin título',
+                    imageUrl: roomImageUrl, // Guardar la primera imagen aquí
                     description: roomDetails.description || 'Sin descripción',
                     price: roomDetails.price || 0,
-                    location: roomDetails.location || 'Ubicación no especificada',
+                    location: roomDetails.address || 'Ubicación no especificada',
                 },
             },
         });

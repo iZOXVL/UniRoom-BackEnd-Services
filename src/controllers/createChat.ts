@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { db } from '../lib/db';
-import jwt from 'jsonwebtoken';
 import axios from 'axios';
 
 const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
@@ -9,8 +8,6 @@ const getRoomDetailsApi = 'https://uruniroom.azurewebsites.net/api/Rooms/GetRoom
 export const createChat = async (req: Request, res: Response): Promise<void> => {
   try {
     const { token, room } = req.body;
-
- 
 
     // Verificación del token
     const tokenResponse = await axios.post(verifyTokenApi, { token });
@@ -21,14 +18,13 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
 
     const guest = tokenResponse.data.user;
 
- 
-
     // Obtener detalles de la habitación y landlord
     const roomDetailsResponse = await axios.post(getRoomDetailsApi, { roomId: room.roomId });
     const roomDetails = roomDetailsResponse.data;
     const landlord = roomDetails.landlordDto;
 
-
+    // Extraer la primera imagen del array multimediaDto.imageUrl
+    const roomImageUrl = roomDetails.multimediaDto?.imageUrl?.[0] || null;
 
     // Buscar chat existente
     const existingChat = await db.chat.findFirst({
@@ -46,7 +42,7 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
       return;
     }
 
-    // Crear nuevo chat con detalles de landlord y guest
+    // Crear nuevo chat con detalles de landlord, guest y primera imagen de la habitación
     const newChat = await db.chat.create({
       data: {
         participants: [landlord.id, guest.id], // Solo los IDs para la validación
@@ -68,13 +64,13 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
         roomId: room.roomId,
         roomDetails: {
           title: roomDetails.title || 'Sin título',
+          imageUrl: roomImageUrl, // Guardar la primera imagen aquí
           description: roomDetails.description || 'Sin descripción',
           price: roomDetails.price || 0,
-          location: roomDetails.location || 'Ubicación no especificada',
+          location: roomDetails.address || 'Ubicación no especificada',
         },
       },
     });
-    
 
     res.status(200).json({ status: 'success', chat: newChat });
   } catch (error) {

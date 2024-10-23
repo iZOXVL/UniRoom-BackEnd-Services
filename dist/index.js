@@ -31,6 +31,7 @@ app.use((0, morgan_1.default)('dev'));
 app.use(body_parser_1.default.urlencoded({ extended: true }));
 app.use(body_parser_1.default.json());
 app.use(routes_1.default);
+app.set('socketio', io);
 // Eventos de Socket.io
 io.on('connection', (socket) => {
     console.log(`Cliente conectado: ${socket.id}`);

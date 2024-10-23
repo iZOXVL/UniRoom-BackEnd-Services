@@ -9,6 +9,8 @@ import { db } from './lib/db';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 
+
+
 const app = express();
 const PORT = 4000;
 
@@ -30,6 +32,8 @@ app.use(morgan('dev'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(router);
+app.set('socketio', io);
+
 
 // Eventos de Socket.io
 io.on('connection', (socket) => {
