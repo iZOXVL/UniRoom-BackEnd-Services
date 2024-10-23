@@ -35,7 +35,6 @@ app.use(router);
 app.set('socketio', io);
 
 
-// Eventos de Socket.io
 io.on('connection', (socket) => {
   console.log(`Cliente conectado: ${socket.id}`);
 
@@ -62,7 +61,7 @@ io.on('connection', (socket) => {
     const senderId = decoded.userId;
 
     try {
-      // Guardar el nuevo mensaje
+      // Guardar el nuevo mensaje en la base de datos
       const newMessage = await db.message.create({
         data: {
           chatId,
@@ -86,50 +85,8 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Error al guardar el mensaje' });
     }
   });
-
-  // Evento para actualizar el estado del chat
-  socket.on('updateChatStatus', async (chatId, status) => {
-    try {
-      // Actualizar el estado del chat usando Prisma
-      const chat = await db.chat.update({
-        where: { id: chatId },
-        data: { status },
-      });
-
-      io.to(chatId).emit('chatStatusUpdated', { chatId, status });
-      console.log(`Estado del chat ${chatId} actualizado a ${status}`);
-    } catch (error) {
-      console.error('Error al actualizar el estado del chat:', error);
-      socket.emit('error', { message: 'Error al actualizar el estado del chat' });
-    }
-  });
-
-  // Evento para obtener todos los chats de un usuario específico
-  socket.on('getUserChats', async (userId) => {
-    try {
-      const chats = await db.chat.findMany({
-        where: {
-          participants: { has: userId }
-        },
-        orderBy: { updatedAt: 'desc' },
-      });
-
-      if (chats.length > 0) {
-        socket.emit('userChats', { status: 'Success', chats });
-      } else {
-        socket.emit('userChats', { status: 'error', message: 'No se encontraron chats para este usuario.' });
-      }
-    } catch (error) {
-      console.error('Error al obtener los chats del usuario:', error);
-      socket.emit('error', { message: 'Error al obtener los chats' });
-    }
-  });
-
-  // Evento al desconectar un cliente
-  socket.on('disconnect', () => {
-    console.log(`Cliente desconectado: ${socket.id}`);
-  });
 });
+
 
 // Escucha del servidor en el puerto 4000
 server.listen(PORT, () => {
