@@ -53,7 +53,7 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
         participantDetails: [
           {
             userType: 'userLandlord',
-            id: "cm2a1xuzc00009alqzu5iui0s",
+            id: landlord.id,
             name: landlord.name,
             imageUrl: landlord.imageUrl,
           },
