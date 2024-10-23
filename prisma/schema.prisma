@@ -9,8 +9,8 @@ datasource db {
 
 model Chat {
   id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  participants     String[] // Aquí mantienes los IDs para la validación
-  participantDetails Json?  // Aquí almacenas los detalles adicionales
+  participants     String[]
+  participantDetails Json?  
   status           String
   roomId           String
   roomDetails      Json?
