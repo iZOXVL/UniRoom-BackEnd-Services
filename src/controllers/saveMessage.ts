@@ -19,11 +19,11 @@ export const saveMessage = async (req: Request, res: Response): Promise<void> =>
 
     const guest = tokenResponse.data.user;
 
-    // Decodificar token
+    // Decodificar token (opcional si no necesitas otros detalles)
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     const senderId = decoded.userId;
 
-    // Crear el nuevo mensaje
+    // Crear el nuevo mensaje, usando el nombre del usuario extraído del token en lugar de pasarlo desde el cuerpo de la petición
     const newMessage = await db.message.create({
       data: {
         chatId,
