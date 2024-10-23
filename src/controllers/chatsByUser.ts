@@ -12,7 +12,7 @@ export const getChatsByUser = async (req: Request, res: Response): Promise<void>
 
     const tokenResponse = await axios.post(verifyTokenApi, { token });
     if (!tokenResponse.data.validateToken) {
-      res.status(401).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
+      res.status(200).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
       return;
     }
 
@@ -27,7 +27,7 @@ export const getChatsByUser = async (req: Request, res: Response): Promise<void>
     });
 
     if (!chats.length) {
-      res.status(404).json({ status: 'error', message: 'No se encontraron chats para este usuario.' });
+      res.status(200).json({ status: 'error', message: 'No se encontraron chats para este usuario.' });
       return;
     }
 
@@ -42,6 +42,6 @@ export const getChatsByUser = async (req: Request, res: Response): Promise<void>
     res.status(200).json({ status: 'success', chats: chatData });
   } catch (error) {
     console.error('Error al obtener los chats:', error);
-    res.status(500).json({ status: 'error', message: 'Error al obtener los chats' });
+    res.status(200).json({ status: 'error', message: 'Error al obtener los chats, revisa que el token sea valido' });
   }
 };

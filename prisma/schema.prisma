@@ -8,13 +8,16 @@ datasource db {
 }
 
 model Chat {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  participants String[] 
-  status       String
-  roomId       String  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  participants     String[] // Aquí mantienes los IDs para la validación
+  participantDetails Json?  // Aquí almacenas los detalles adicionales
+  status           String
+  roomId           String
+  roomDetails      Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
+
 
 model Message {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
