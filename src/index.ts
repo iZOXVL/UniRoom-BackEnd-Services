@@ -2,7 +2,7 @@
 import express from 'express';
 import morgan from 'morgan';
 import { Server as SocketServer } from 'socket.io';
-import http from 'http';
+import http, { get } from 'http';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import router from './routes/routes';
@@ -12,6 +12,7 @@ import jwt from 'jsonwebtoken';
 
 const app = express();
 const PORT = 4000;
+
 
 // Crear el servidor con módulo http
 const server = http.createServer(app);
@@ -54,6 +55,7 @@ io.on('connection', (socket) => {
       socket.emit('error', { message: 'Token no válido. Usuario no autenticado.' });
       return;
     }
+
 
       // Emitir el mensaje a todos los usuarios conectados a ese chat (excepto al emisor)
       socket.broadcast.to(chatId).emit('message', {
