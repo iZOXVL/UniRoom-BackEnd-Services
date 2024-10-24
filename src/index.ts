@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
   // Evento para unirse a una sala de chat
   socket.on('joinChat', (chatId) => {
     socket.join(chatId);
- 
+    console.log(`Usuario conectado a la sala ${chatId}`);
   });
 
   // Evento para recibir y retransmitir mensajes
@@ -107,7 +107,7 @@ io.on('connection', (socket) => {
 
   // Evento al desconectar un cliente
   socket.on('disconnect', () => {
-
+    console.log('Usuario desconectado');
   });
 });
 
