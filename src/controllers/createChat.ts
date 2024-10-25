@@ -4,6 +4,18 @@ import axios from 'axios';
 
 const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
 const getRoomDetailsApi = 'https://uruniroom.azurewebsites.net/api/Rooms/GetRoomDetails';
+const getUserInfoApi = 'https://dev-mobile-auth-api.uniroom.app/api/users/user-info';
+
+// Función para obtener el nombre del usuario desde la API
+const fetchUserName = async (userId: string) => {
+  try {
+    const response = await axios.post(getUserInfoApi, { userId });
+    return response.data.user.name;
+  } catch (error) {
+    console.error(`Error al obtener el nombre del usuario ${userId}:`, error);
+    return null;
+  }
+};
 
 export const createChat = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -22,6 +34,10 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
     const roomDetailsResponse = await axios.post(getRoomDetailsApi, { roomId: room.roomId });
     const roomDetails = roomDetailsResponse.data;
     const landlord = roomDetails.landlordDto;
+
+    // Obtener el nombre de cada participante usando su ID
+    const landlordName = await fetchUserName(landlord.id);
+    const guestName = await fetchUserName(guest.id);
 
     // Extraer la primera imagen del array multimediaDto.imageUrl
     const roomImageUrl = roomDetails.multimediaDto?.imageUrl?.[0] || null;
@@ -50,13 +66,13 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
           {
             userType: 'userLandlord',
             id: landlord.id,
-            name: landlord.name,
+            name: landlordName || landlord.name,
             imageUrl: landlord.imageUrl,
           },
           {
             userType: 'userGuest',
             id: guest.id,
-            name: guest.name,
+            name: guestName || guest.name,
             imageUrl: guest.image || null,
           }
         ],
