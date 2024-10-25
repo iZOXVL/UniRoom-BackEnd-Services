@@ -11,7 +11,7 @@ const getUserInfoApi = 'https://dev-mobile-auth-api.uniroom.app/api/users/user-i
 const fetchUserName = async (userId: string) => {
   try {
     const response = await axios.post(getUserInfoApi, { userId });
-    return response.data.user.name;
+    return response.data;
   } catch (error) {
     console.error(`Error al obtener el nombre del usuario ${userId}:`, error);
     return null;
@@ -37,8 +37,10 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
     const landlord = roomDetails.landlordDto;
 
     // Obtener el nombre de cada participante usando su ID
-    const landlordName = await fetchUserName(landlord.id);
-    const guestName = await fetchUserName(guest.id);
+    const landlordInfo = await fetchUserName(landlord.id);
+    const guestInfo = await fetchUserName(guest.id);
+
+    console.log('Creando chat:', landlordInfo.user.name, guestInfo.user.email, roomDetails.title);
 
     // Extraer la primera imagen del array multimediaDto.imageUrl
     const roomImageUrl = roomDetails.multimediaDto?.imageUrl?.[0] || null;
@@ -67,13 +69,13 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
           {
             userType: 'userLandlord',
             id: landlord.id,
-            name: landlordName || landlord.name,
+            name: landlordInfo.user.name || landlord.name,
             imageUrl: landlord.imageUrl,
           },
           {
             userType: 'userGuest',
             id: guest.id,
-            name: guestName || guest.name,
+            name: guestInfo.user.name || guest.name,
             imageUrl: guest.image || null,
           }
         ],
@@ -88,9 +90,10 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
         },
       },
     });
+    console.log('Nuevo chat creado:', landlordInfo.user.email, guestInfo.user.email, roomDetails.title);
 
-    await sendLandlordNotificationEmail(landlord.email, roomDetails.title);
-    await sendGuestConfirmationEmail(guest.email);
+    sendLandlordNotificationEmail(landlordInfo.user.email, roomDetails.title);
+    sendGuestConfirmationEmail(guestInfo.user.email);
 
     res.status(200).json({ status: 'success', chat: newChat });
   } catch (error) {

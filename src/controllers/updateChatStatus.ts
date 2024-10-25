@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import { db } from '../lib/db'; // Prisma client configurado
+import { sendApprovalNotificationEmail } from '../lib/mail';
 
 export const updateChatStatus = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { chatId, status } = req.body;
+    const { chatId, status, email, title } = req.body;
 
     // Validar que el status sea 'approved'
     if (status !== 'approved') {
@@ -26,6 +27,8 @@ export const updateChatStatus = async (req: Request, res: Response): Promise<voi
       where: { id: chatId },
       data: { status: 'approved' },
     });
+
+    sendApprovalNotificationEmail(email, title);
 
     res.status(200).json({ status: 'success', message: 'La solicitud fue aprobada.', chat: updatedChat });
   } catch (error) {
