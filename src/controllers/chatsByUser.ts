@@ -52,12 +52,14 @@ export const getChatsByUser = async (req: Request, res: Response): Promise<void>
             return {
               id: participantId,
               name: response.data.user.name,
+              email: response.data.user.email,
             };
           } catch (error) {
             console.error(`Error al obtener el nombre del participante ${participantId}:`, error);
             return {
               id: participantId,
               name: 'Nombre no disponible',
+              email: 'Email no disponible',
             };
           }
         })

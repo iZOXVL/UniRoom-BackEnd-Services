@@ -20,7 +20,7 @@ export const sendLandlordNotificationEmail = async (email: string, roomTitle: st
               <tr>
                 <td>
                   <img src="https://i.imgur.com/ruySKLQ.png" alt="Logo" height="130" style="display:block;margin:0 auto;">
-                  <h1 style="text-align:center; font-size:24px;">Nueva solicitud de reserva 🏠<br></br> Accede a tu dashboard para ver los detalles y aceptar la solicitud</h1>
+                  <h1 style="text-align:center; font-size:24px;">Nueva solicitud de reserva 🏠</h1><br></br><h4 style="text-align:center; font-size:24px;"> Accede a tu dashboard para ver los detalles y aceptar la solicitud</h4>
                   <p style="font-size:14px;">¡Hola! Parece que alguien quiere mudarse y ha solicitado chatear contigo sobre tu habitación: "${roomTitle}"</p>
                     <table align="center" width="100%" border="0" cellPadding="0" cellSpacing="0" role="presentation" style="text-align:center;margin-top:32px;margin-bottom:32px">
                       <tbody>
@@ -57,7 +57,7 @@ export const sendGuestConfirmationEmail = async (email: string) => {
               <tr>
                 <td>
                   <img src="https://i.imgur.com/ruySKLQ.png" alt="Logo" height="130" style="display:block;margin:0 auto;">
-                  <h1 style="text-align:center; font-size:24px;">Solicitud Enviada ✨<br></br> Tu solicitud de chat fue enviada exitosamente</h1>
+                  <h1 style="text-align:center; font-size:24px;">Solicitud Enviada ✨</h1><br></br><h4 style="text-align:center; font-size:24px;">Tu solicitud de chat fue enviada exitosamente</h4>
                   <p style="font-size:14px;">Ahora, solo falta un pequeño paso: ¡espera a que el propietario revise y acepte la solicitud!</p>
                     <br></br>
                   <p style="font-size:14px;">Gracias por confiar en UniRoom. 🫶</p>
