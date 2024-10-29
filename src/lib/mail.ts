@@ -103,3 +103,35 @@ export const sendApprovalNotificationEmail = async (email: string, roomTitle: st
         `
     });
 };
+
+export const sendRefusedNotificationEmail = async (email: string, roomTitle: string) => {
+  await resend.emails.send({
+    from: "UniRoom <no-reply@uniroom.app>",
+    to: email,
+    subject: "Actualización sobre tu solicitud de habitación 🏠",
+    html: `
+      <!DOCTYPE html>
+      <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body>
+          <table align="center" style="border-width:1px; border-style:solid; border-color:#eaeaea; border-radius:5px; margin-top:40px; max-width:465px; padding:20px;">
+            <tbody>
+              <tr>
+                <td>
+                  <img src="https://i.imgur.com/ruySKLQ.png" alt="Logo" height="130" style="display:block;margin:0 auto;">
+                  <h1 style="text-align:center; font-size:24px;">Lo sentimos, tu solicitud no fue aprobada 😞</h1>
+                  <p style="font-size:19px;">El propietario ha decidido no aprobar tu solicitud para la habitación: "${roomTitle}"</p>
+                  <p style="font-size:14px;">Sabemos que esto puede ser decepcionante, pero no te desanimes. Hay muchas opciones disponibles en UniRoom, y estamos aquí para ayudarte a encontrar el lugar ideal. 🌟</p>
+                  <br>
+                  <p style="font-size:14px;">Gracias por confiar en UniRoom y ¡sigue buscando, tu próximo hogar te espera! 🏠✨</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `
+  });
+};
