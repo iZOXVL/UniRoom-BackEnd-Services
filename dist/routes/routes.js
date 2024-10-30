@@ -2,12 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const createChat_1 = require("../controllers/createChat");
-const saveMessage_1 = require("../controllers/saveMessage");
 const chatsByUser_1 = require("../controllers/chatsByUser");
 const getMessages_1 = require("../controllers/getMessages");
+const updateChatStatus_1 = require("../controllers/updateChatStatus");
 const router = (0, express_1.Router)();
 router.post('/create-chat', createChat_1.createChat);
 router.get('/chats/:token', chatsByUser_1.getChatsByUser);
 router.get('/messages/:chatId', getMessages_1.getMessages);
-router.post('/save-message', saveMessage_1.saveMessage);
+router.post('/update-status', updateChatStatus_1.updateChatStatus);
 exports.default = router;

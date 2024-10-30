@@ -15,6 +15,9 @@ const axios_1 = __importDefault(require("axios"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const app = (0, express_1.default)();
 const PORT = 4000;
+const verifyTokenApi = process.env.VERIFY_TOKEN_API;
+const userInfoApi = 'https://dev-mobile-auth-api.uniroom.app/api/users/user-info';
+const JWT_SECRET = process.env.JWT_SECRET;
 // Crear el servidor con módulo http
 const server = http_1.default.createServer(app);
 // Configurar CORS para Socket.io
@@ -31,45 +34,50 @@ app.use((0, morgan_1.default)('dev'));
 app.use(body_parser_1.default.urlencoded({ extended: true }));
 app.use(body_parser_1.default.json());
 app.use(routes_1.default);
-app.set('socketio', io);
 // Eventos de Socket.io
 io.on('connection', (socket) => {
-    console.log(`Cliente conectado: ${socket.id}`);
     // Evento para unirse a una sala de chat
     socket.on('joinChat', (chatId) => {
         socket.join(chatId);
-        console.log(`Cliente ${socket.id} se ha unido al chat: ${chatId}`);
+        console.log(`Usuario conectado a la sala ${chatId}`);
     });
     // Evento para recibir y retransmitir mensajes
     socket.on('message', async (messageData) => {
-        const { chatId, content, nickname, token } = messageData;
-        console.log(`Mensaje recibido en el chat ${chatId}:`, content);
-        // Verificar el token y guardar el mensaje en la base de datos usando Prisma
-        const tokenResponse = await axios_1.default.post(process.env.VERIFY_TOKEN_API, { token });
-        if (!tokenResponse.data.validateToken) {
-            socket.emit('error', { message: 'Token no válido. Usuario no autenticado.' });
-            return;
-        }
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        const senderId = decoded.userId;
+        const { chatId, content, token } = messageData;
         try {
-            // Guardar el nuevo mensaje
+            // Verificar el token
+            const tokenResponse = await axios_1.default.post(verifyTokenApi, { token });
+            if (!tokenResponse.data.validateToken) {
+                socket.emit('error', { message: 'Token no válido. Usuario no autenticado.' });
+                return;
+            }
+            // Decodificar el token para obtener el senderId
+            const decoded = jsonwebtoken_1.default.verify(token, JWT_SECRET);
+            const senderId = decoded.userId;
+            // Obtener el nombre del usuario
+            const userInfoResponse = await axios_1.default.post(userInfoApi, { userId: senderId });
+            if (!userInfoResponse.data.success) {
+                socket.emit('error', { message: 'No se pudo recuperar la información del usuario.' });
+                return;
+            }
+            const senderName = userInfoResponse.data.user.name;
+            // Crear el mensaje en la base de datos
             const newMessage = await db_1.db.message.create({
                 data: {
                     chatId,
                     senderId,
-                    nickname,
+                    nickname: senderName,
                     content,
                     isRead: false,
                 },
             });
-            // Emitir el mensaje a todos los usuarios conectados a ese chat (excepto al emisor)
+            // Emitir el mensaje a todos los usuarios conectados al chat, incluyendo fecha y hora
             socket.broadcast.to(chatId).emit('message', {
                 chatId,
                 content,
-                from: nickname,
+                from: senderName,
+                timestamp: newMessage.timestamp,
             });
-            console.log(`Mensaje guardado y transmitido en el chat ${chatId}`);
         }
         catch (error) {
             console.error('Error al guardar el mensaje:', error);
@@ -85,7 +93,6 @@ io.on('connection', (socket) => {
                 data: { status },
             });
             io.to(chatId).emit('chatStatusUpdated', { chatId, status });
-            console.log(`Estado del chat ${chatId} actualizado a ${status}`);
         }
         catch (error) {
             console.error('Error al actualizar el estado del chat:', error);
@@ -115,7 +122,7 @@ io.on('connection', (socket) => {
     });
     // Evento al desconectar un cliente
     socket.on('disconnect', () => {
-        console.log(`Cliente desconectado: ${socket.id}`);
+        console.log('Usuario desconectado');
     });
 });
 // Escucha del servidor en el puerto 4000

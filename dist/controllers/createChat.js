@@ -6,8 +6,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.createChat = void 0;
 const db_1 = require("../lib/db");
 const axios_1 = __importDefault(require("axios"));
+const mail_1 = require("../lib/mail");
 const verifyTokenApi = process.env.VERIFY_TOKEN_API;
 const getRoomDetailsApi = 'https://uruniroom.azurewebsites.net/api/Rooms/GetRoomDetails';
+const getUserInfoApi = 'https://dev-mobile-auth-api.uniroom.app/api/users/user-info';
+// Función para obtener el nombre del usuario desde la API
+const fetchUserName = async (userId) => {
+    try {
+        const response = await axios_1.default.post(getUserInfoApi, { userId });
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error al obtener el nombre del usuario ${userId}:`, error);
+        return null;
+    }
+};
 const createChat = async (req, res) => {
     try {
         const { token, room } = req.body;
@@ -22,6 +35,10 @@ const createChat = async (req, res) => {
         const roomDetailsResponse = await axios_1.default.post(getRoomDetailsApi, { roomId: room.roomId });
         const roomDetails = roomDetailsResponse.data;
         const landlord = roomDetails.landlordDto;
+        // Obtener el nombre de cada participante usando su ID
+        const landlordInfo = await fetchUserName(landlord.id);
+        const guestInfo = await fetchUserName(guest.id);
+        console.log('Creando chat:', landlordInfo.user.name, guestInfo.user.email, roomDetails.title);
         // Extraer la primera imagen del array multimediaDto.imageUrl
         const roomImageUrl = roomDetails.multimediaDto?.imageUrl?.[0] || null;
         // Buscar chat existente
@@ -46,13 +63,13 @@ const createChat = async (req, res) => {
                     {
                         userType: 'userLandlord',
                         id: landlord.id,
-                        name: landlord.name,
+                        name: landlordInfo.user.name || landlord.name,
                         imageUrl: landlord.imageUrl,
                     },
                     {
                         userType: 'userGuest',
                         id: guest.id,
-                        name: guest.name,
+                        name: guestInfo.user.name || guest.name,
                         imageUrl: guest.image || null,
                     }
                 ],
@@ -67,6 +84,9 @@ const createChat = async (req, res) => {
                 },
             },
         });
+        console.log('Nuevo chat creado:', landlordInfo.user.email, guestInfo.user.email, roomDetails.title);
+        (0, mail_1.sendLandlordNotificationEmail)(landlordInfo.user.email, roomDetails.title);
+        (0, mail_1.sendGuestConfirmationEmail)(guestInfo.user.email);
         res.status(200).json({ status: 'success', chat: newChat });
     }
     catch (error) {

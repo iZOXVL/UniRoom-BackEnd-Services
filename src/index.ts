@@ -13,6 +13,10 @@ import jwt from 'jsonwebtoken';
 const app = express();
 const PORT = 4000;
 
+const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
+const userInfoApi = 'https://dev-mobile-auth-api.uniroom.app/api/users/user-info';
+const JWT_SECRET = process.env.JWT_SECRET as string;
+
 
 // Crear el servidor con módulo http
 const server = http.createServer(app);
@@ -36,7 +40,6 @@ app.use(router);
 // Eventos de Socket.io
 io.on('connection', (socket) => {
  
-
   // Evento para unirse a una sala de chat
   socket.on('joinChat', (chatId) => {
     socket.join(chatId);
@@ -45,27 +48,52 @@ io.on('connection', (socket) => {
 
   // Evento para recibir y retransmitir mensajes
   socket.on('message', async (messageData) => {
-    const { chatId, content, nickname, token } = messageData;
+    const { chatId, content, token } = messageData;
 
-   
+    try {
+        // Verificar el token
+        const tokenResponse = await axios.post(verifyTokenApi, { token });
+        if (!tokenResponse.data.validateToken) {
+            socket.emit('error', { message: 'Token no válido. Usuario no autenticado.' });
+            return;
+        }
 
-    // Verificar el token y guardar el mensaje en la base de datos usando Prisma
-    const tokenResponse = await axios.post(process.env.VERIFY_TOKEN_API as string, { token });
-    if (!tokenResponse.data.validateToken) {
-      socket.emit('error', { message: 'Token no válido. Usuario no autenticado.' });
-      return;
+        // Decodificar el token para obtener el senderId
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+        const senderId = decoded.userId;
+
+        // Obtener el nombre del usuario
+        const userInfoResponse = await axios.post(userInfoApi, { userId: senderId });
+        if (!userInfoResponse.data.success) {
+            socket.emit('error', { message: 'No se pudo recuperar la información del usuario.' });
+            return;
+        }
+        
+        const senderName = userInfoResponse.data.user.name;
+
+        // Crear el mensaje en la base de datos
+        const newMessage = await db.message.create({
+            data: {
+                chatId,
+                senderId,
+                nickname: senderName,
+                content,
+                isRead: false,
+            },
+        });
+
+        // Emitir el mensaje a todos los usuarios conectados al chat, incluyendo fecha y hora
+        socket.broadcast.to(chatId).emit('message', {
+            chatId,
+            content,
+            from: senderName,
+            timestamp: newMessage.timestamp,
+        });
+    } catch (error) {
+        console.error('Error al guardar el mensaje:', error);
+        socket.emit('error', { message: 'Error al guardar el mensaje' });
     }
-
-
-      // Emitir el mensaje a todos los usuarios conectados a ese chat (excepto al emisor)
-      socket.broadcast.to(chatId).emit('message', {
-        chatId,
-        content,
-        from: nickname,
-      });
-
-   
-  });
+});
 
   // Evento para actualizar el estado del chat
   socket.on('updateChatStatus', async (chatId, status) => {
