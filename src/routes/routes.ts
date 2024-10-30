@@ -11,6 +11,6 @@ router.post('/create-chat', createChat);
 router.get('/chats/:token', getChatsByUser);
 router.get('/messages/:chatId', getMessages);
 router.post('/update-status', updateChatStatus);
-router.post('/chats-request', getRequestByUser);
+router.post('/chats-request/:token', getRequestByUser);
 
 export default router;
