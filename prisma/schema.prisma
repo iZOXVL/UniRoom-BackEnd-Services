@@ -27,3 +27,11 @@ model Message {
   timestamp DateTime @default(now())
   isRead    Boolean  @default(false)
 }
+
+model Client {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  email    String 
+  phone    String
+  createdAt DateTime @default(now())
+}
