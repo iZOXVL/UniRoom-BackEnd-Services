@@ -143,7 +143,7 @@ export const sendBetaEmail = async (name: string, email: string) => {
     subject: "¡Gracias por su interés en UniRoom! 🏡✨",
     html: `
       <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html dir="ltr" lang="en">
+          <html dir="ltr" lang="en">
 
   <head>
     <link rel="preload" as="image" href="https://i.imgur.com/uKIVq1K.png" />
@@ -205,7 +205,7 @@ export const sendBetaEmail = async (name: string, email: string) => {
       </tbody>
     </table><!--/$-->
   </body>
-</html>
+            </html>
     `
   });
 };
