@@ -1,81 +1,138 @@
-import { Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
-import axios from 'axios';
-import { db } from '../lib/db';
+// getChatsByUser.ts
 
+import { Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import axios from "axios";
+import { db } from "../lib/db"; // Adjust the import path based on your project structure
+
+// Environment variables
 const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
-const JWT_SECRET = process.env.JWT_SECRET as string;  
+const JWT_SECRET = process.env.JWT_SECRET as string;
 
-export const getChatsByUser = async (req: Request, res: Response): Promise<void> => {
+// Main function to get chats by user
+export const getChatsByUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { token } = req.params;
+    const { status, roomId, filterValue } = req.body;
 
-    // Verificar el token de usuario a través de la API
+    // Verify user token via external API
     const tokenResponse = await axios.post(verifyTokenApi, { token });
     if (!tokenResponse.data.validateToken) {
-      res.status(200).json({ status: 'error', message: 'Token no válido. Usuario no autenticado.' });
+      res.status(200).json({
+        status: "error",
+        message: "Token no válido. Usuario no autenticado.",
+      });
       return;
     }
 
-    // Decodificar el token para obtener el userId
+    // Decode token to get userId
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     const userId = decoded.userId;
 
-    // Obtener los chats donde el usuario es participante
+    // Create base filter for querying the database
+    const filter: any = {
+      participants: { has: userId },
+      status: status || "approved", // Default status is 'approved' if not provided
+    };
+
+    // Add roomId filter if present
+    if (roomId) {
+      let roomIdsArray: string[] = [];
+      if (Array.isArray(roomId)) {
+        roomIdsArray = roomId;
+      } else if (typeof roomId === "string") {
+        roomIdsArray = roomId.split(",").map((id) => id.trim());
+      }
+
+      filter.roomId = { in: roomIdsArray };
+    }
+
+    // Add filterValue filter if present
+    if (filterValue) {
+      filter.roomDetails = {
+        path: ["title"],
+        string_contains: filterValue,
+        string_mode: "insensitive",
+      };
+    }
+
+    // Fetch chats from the database based on the filter
     const chats = await db.chat.findMany({
-      where: {
-        participants: { has: userId },
-      },
-      orderBy: { updatedAt: 'desc' },
+      where: filter,
+      orderBy: { updatedAt: "desc" },
     });
 
+    // If no chats found, return an empty array
     if (!chats.length) {
-      res.status(200).json({ status: 'error', message: 'No se encontraron chats para este usuario.' });
+      res.status(200).json({
+        status: "success",
+        chats: [],
+      });
       return;
     }
 
-    // Procesar cada chat y obtener el último mensaje y los nombres de los participantes
-    const chatData = await Promise.all(chats.map(async (chat) => {
-      // Obtener el último mensaje del chat
-      const lastMessage = await db.message.findFirst({
-        where: { chatId: chat.id },
-        orderBy: { timestamp: 'desc' },
-      });
+    // Process each chat to include participant details and last message
+    const chatData = await Promise.all(
+      chats.map(async (chat) => {
+        // Get the last message of the chat
+        const lastMessage = await db.message.findFirst({
+          where: { chatId: chat.id },
+          orderBy: { timestamp: "desc" },
+        });
 
-      // Obtener los nombres de los participantes del chat
-      const participantsWithNames = await Promise.all(
-        chat.participants.map(async (participantId: string) => {
-          try {
-            const response = await axios.post('https://dev-mobile-auth-api.uniroom.app/api/users/user-info', {
-              userId: participantId,
-            });
-            return {
-              id: participantId,
-              name: response.data.user.name,
-              email: response.data.user.email,
-            };
-          } catch (error) {
-            console.error(`Error al obtener el nombre del participante ${participantId}:`, error);
-            return {
-              id: participantId,
-              name: 'Nombre no disponible',
-              email: 'Email no disponible',
-            };
-          }
-        })
-      );
+        // Get details of participants
+        const participantsWithNames = await Promise.all(
+          chat.participants.map(async (participantId: string) => {
+            try {
+              const response = await axios.post(
+                "https://dev-mobile-auth-api.uniroom.app/api/users/user-info",
+                {
+                  userId: participantId,
+                }
+              );
+              return {
+                id: participantId,
+                name: response.data.user.name,
+                email: response.data.user.email,
+                imageUrl: response.data.user.imageUrl,
+              };
+            } catch (error) {
+              console.error(
+                `Error al obtener los detalles del participante ${participantId}:`,
+                error
+              );
+              return {
+                id: participantId,
+                name: "Nombre no disponible",
+                email: "Email no disponible",
+                imageUrl: null,
+              };
+            }
+          })
+        );
 
-      return {
-        ...chat,
-        participants: participantsWithNames,
-        lastMessage: lastMessage?.content || null,
-        lastMessageTime: lastMessage?.timestamp || chat.updatedAt,
-      };
-    }));
+        return {
+          ...chat,
+          participants: participantsWithNames,
+          participantDetails: participantsWithNames, // Include participant details for the client
+          lastMessage: lastMessage?.content || null,
+          lastMessageTime: lastMessage?.timestamp || chat.updatedAt,
+        };
+      })
+    );
 
-    res.status(200).json({ status: 'success', chats: chatData });
+    // Send the processed chat data to the client
+    res.status(200).json({ status: "success", chats: chatData });
   } catch (error) {
-    console.error('Error al obtener los chats:', error);
-    res.status(200).json({ status: 'error', message: 'Error al obtener los chats, revisa que el token sea valido' });
+    console.error("Error al obtener los chats:", error);
+    res.status(200).json({
+      status: "error",
+      message: "Error al obtener los chats, revisa que el token sea válido",
+    });
   }
 };
+
+export default getChatsByUser;
