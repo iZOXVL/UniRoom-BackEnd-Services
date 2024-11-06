@@ -10,6 +10,7 @@ import { updateUserInfo } from '../controllers/updateUserInfo';
 const router = Router();
 
 router.post('/create-chat', createChat);
+router.get('/chats/:token', getChatsByUser);
 router.post('/chats/:token', getChatsByUser);
 router.get('/messages/:chatId', getMessages);
 router.post('/update-status', updateChatStatus);
