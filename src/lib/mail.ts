@@ -40,38 +40,6 @@ export const sendLandlordNotificationEmail = async (email: string, roomTitle: st
 };
 
 
-export const sendGuestConfirmationEmail = async (email: string) => {
-    await resend.emails.send({
-      from: "UniRoom <no-reply@uniroom.app>",
-      to: email,
-      subject: "¡Solicitud de chat enviada! 🎉",
-      html: `
-         <!DOCTYPE html>
-      <html lang="es">
-        <head>
-          <meta charset="UTF-8">
-        </head>
-        <body>
-          <table align="center" style="border-width:1px; border-style:solid; border-color:#eaeaea; border-radius:5px; margin-top:40px; max-width:465px; padding:20px;">
-            <tbody>
-              <tr>
-                <td>
-                  <img src="https://i.imgur.com/ruySKLQ.png" alt="Logo" height="130" style="display:block;margin:0 auto;">
-                  <h1 style="text-align:center; font-size:24px;">Solicitud Enviada ✨</h1><br></br>
-                   <p style="font-size:19px;">Tu solicitud de chat fue enviada exitosamente 🥳</p>
-                   <p style="font-size:14px;">Ahora, solo falta un pequeño paso: ¡espera a que el propietario revise y acepte la solicitud! 🫠</p>
-                    <br></br>
-                  <p style="font-size:14px;">Gracias por confiar en UniRoom. 🫶</p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </body>
-      </html>`
-    });
-};
-
-
 export const sendApprovalNotificationEmail = async (email: string, roomTitle: string) => {
     await resend.emails.send({
         from: "UniRoom <no-reply@uniroom.app>",

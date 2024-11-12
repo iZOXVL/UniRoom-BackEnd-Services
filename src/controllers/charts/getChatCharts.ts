@@ -1,106 +1,143 @@
-// getChatStatisticsWithDates.ts
+// statsController.ts
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import axios from "axios";
-import { db } from "../../lib/db"; // Ajusta la ruta de importación según la estructura de tu proyecto
+import { db } from "../../lib/db";
+import { subMonths, startOfMonth, endOfMonth } from "date-fns";
+import jwt from "jsonwebtoken";
 
-// Variables de entorno
-const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
+const VERIFY_TOKEN_API = process.env.VERIFY_TOKEN_API as string;
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-// Función principal para obtener estadísticas de chats con fechas de creación
-export const getChatStatisticsWithDates = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { token } = req.params;
+    const token = req.body.token;
 
-    // Verificar el token del usuario mediante API externa
-    const tokenResponse = await axios.post(verifyTokenApi, { token });
+    // Verificar el token de usuario
+    const tokenResponse = await axios.post(VERIFY_TOKEN_API, { token });
     if (!tokenResponse.data.validateToken) {
-      res.status(200).json({
+      res.status(401).json({
         status: "error",
         message: "Token no válido. Usuario no autenticado.",
       });
       return;
     }
 
-    // Decodificar el token para obtener userId
+    // Decodificar el token para obtener el userId
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     const userId = decoded.userId;
 
-    // Contar los chats con estado "approved" y "pending" y obtener fechas de creación
-    const [approvedChats, pendingChats, firstApprovedChat, lastApprovedChat, firstPendingChat, lastPendingChat] = await Promise.all([
+    const now = new Date();
+    const startOfCurrentMonth = startOfMonth(now);
+    const startOfLastMonth = startOfMonth(subMonths(now, 1));
+    const endOfLastMonth = endOfMonth(subMonths(now, 1));
+
+    // Obtener total de visitas de la API externa
+    const visitResponse = await axios.post("https://uruniroom.azurewebsites.net/api/Visit/GetVisits", { token });
+    const totalVisits = visitResponse.data.totalVisits || 0;
+
+    // Obtener las métricas del mes actual
+    const [currentSolicitudes, currentChats, currentRefused] = await Promise.all([
+      db.chat.count({
+        where: {
+          participants: { has: userId },
+          createdAt: { gte: startOfCurrentMonth },
+        },
+      }),
       db.chat.count({
         where: {
           participants: { has: userId },
           status: "approved",
+          createdAt: { gte: startOfCurrentMonth },
         },
       }),
       db.chat.count({
         where: {
           participants: { has: userId },
-          status: "pending",
+          status: "refused",
+          createdAt: { gte: startOfCurrentMonth },
         },
-      }),
-      db.chat.findFirst({
-        where: {
-          participants: { has: userId },
-          status: "approved",
-        },
-        orderBy: { createdAt: "asc" },
-        select: { createdAt: true },
-      }),
-      db.chat.findFirst({
-        where: {
-          participants: { has: userId },
-          status: "approved",
-        },
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true },
-      }),
-      db.chat.findFirst({
-        where: {
-          participants: { has: userId },
-          status: "pending",
-        },
-        orderBy: { createdAt: "asc" },
-        select: { createdAt: true },
-      }),
-      db.chat.findFirst({
-        where: {
-          participants: { has: userId },
-          status: "pending",
-        },
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true },
       }),
     ]);
 
-    // Enviar estadísticas al cliente con fechas de creación
+    // Obtener las métricas del mes anterior
+    const [lastMonthSolicitudes, lastMonthChats, lastMonthRefused] = await Promise.all([
+      db.chat.count({
+        where: {
+          participants: { has: userId },
+          createdAt: {
+            gte: startOfLastMonth,
+            lt: endOfLastMonth,
+          },
+        },
+      }),
+      db.chat.count({
+        where: {
+          participants: { has: userId },
+          status: "approved",
+          createdAt: {
+            gte: startOfLastMonth,
+            lt: endOfLastMonth,
+          },
+        },
+      }),
+      db.chat.count({
+        where: {
+          participants: { has: userId },
+          status: "refused",
+          createdAt: {
+            gte: startOfLastMonth,
+            lt: endOfLastMonth,
+          },
+        },
+      }),
+    ]);
+    console.log("currentSolicitudes", lastMonthChats);
+
+    // Cálculo de incremento porcentual
+    const calculatePercentageIncrease = (current: number, previous: number) => {
+      return previous > 0 ? ((current - previous) / previous) * 100 : 0;
+    };
+
+    const percentageIncreaseSolicitudes = calculatePercentageIncrease(currentSolicitudes, lastMonthSolicitudes);
+    const percentageIncreaseChats = calculatePercentageIncrease(currentChats, lastMonthChats);
+    const percentageIncreaseRefused = calculatePercentageIncrease(currentRefused, lastMonthRefused);
+    const percentageIncreaseVisits = calculatePercentageIncrease(totalVisits, 200); // Ejemplo de valor base para visitas
+
+    // Responder con los datos organizados para el componente CardDataStats
     res.status(200).json({
       status: "success",
       data: {
-        approvedChats: {
-          count: approvedChats,
-          firstCreatedAt: firstApprovedChat?.createdAt || null,
-          lastCreatedAt: lastApprovedChat?.createdAt || null,
+        visitas: {
+          title: "Vistas",
+          total: totalVisits,
+          rate: `${percentageIncreaseVisits.toFixed(2)}%`,
+          levelUp: percentageIncreaseVisits >= 0,
         },
-        pendingChats: {
-          count: pendingChats,
-          firstCreatedAt: firstPendingChat?.createdAt || null,
-          lastCreatedAt: lastPendingChat?.createdAt || null,
+        solicitudes: {
+          title: "Solicitudes",
+          total: currentSolicitudes,
+          rate: `${percentageIncreaseSolicitudes.toFixed(2)}%`,
+          levelUp: percentageIncreaseSolicitudes >= 0,
+        },
+        chats: {
+          title: "Chats",
+          total: currentChats,
+          rate: `${percentageIncreaseChats.toFixed(2)}%`,
+          levelUp: percentageIncreaseChats >= 0,
+        },
+        rechazados: {
+          title: "Rechazados",
+          total: currentRefused,
+          rate: `${percentageIncreaseRefused.toFixed(2)}%`,
+          levelUp: percentageIncreaseRefused >= 0,
         },
       },
     });
   } catch (error) {
-    console.error("Error al obtener estadísticas de los chats:", error);
-    res.status(200).json({
+    console.error("Error al obtener las estadísticas:", error);
+    res.status(500).json({
       status: "error",
-      message: "Error al obtener las estadísticas de los chats.",
+      message: "Error al obtener las estadísticas.",
     });
   }
 };
-
-export default getChatStatisticsWithDates;

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { db } from '../lib/db';
 import axios from 'axios';
-import { sendGuestConfirmationEmail, sendLandlordNotificationEmail } from '../lib/mail';
+import { sendLandlordNotificationEmail } from '../lib/mail';
 
 const verifyTokenApi = process.env.VERIFY_TOKEN_API as string;
 const getRoomDetailsApi = 'https://uruniroom.azurewebsites.net/api/Rooms/GetRoomDetails';
@@ -93,7 +93,7 @@ export const createChat = async (req: Request, res: Response): Promise<void> => 
     console.log('Nuevo chat creado:', landlordInfo.user.email, guestInfo.user.email, roomDetails.title);
 
     sendLandlordNotificationEmail(landlordInfo.user.email, roomDetails.title);
-    sendGuestConfirmationEmail(guestInfo.user.email);
+    
 
     res.status(200).json({ status: 'success', chat: newChat });
   } catch (error) {
